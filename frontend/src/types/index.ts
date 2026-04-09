@@ -69,6 +69,7 @@ export interface LiveTotals {
   totalExpenses: number
   netCash: number
   transactionCount: number
+  [key: string]: number
 }
 
 export interface CashRegister {
