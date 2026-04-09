@@ -17,7 +17,8 @@ export async function getTodayOpenRegister() {
 }
 
 export async function computeLiveTotals(registerId: string) {
-  const [sales, expenses] = await Promise.all([
+  const [register, sales, expenses] = await Promise.all([
+    prisma.cashRegister.findUnique({ where: { id: registerId }, select: { openingCashAmount: true } }),
     prisma.sale.findMany({ where: { cashRegisterId: registerId }, select: { total: true, paymentMethod: true } }),
     prisma.expense.findMany({ where: { cashRegisterId: registerId }, select: { amount: true } }),
   ])
@@ -35,6 +36,9 @@ export async function computeLiveTotals(registerId: string) {
   for (const e of expenses) {
     totals.totalExpenses += parseFloat(e.amount.toString())
   }
+
+  const openingCash = parseFloat((register?.openingCashAmount ?? 0).toString())
+  totals.netCash = openingCash + totals.CASH - totals.totalExpenses
 
   return totals
 }
