@@ -161,7 +161,7 @@ export default function CashRegisterPage() {
             {(Object.keys(PAYMENT_LABELS) as (keyof typeof PAYMENT_LABELS)[]).map((method) => (
               <div key={method} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                 <span className="text-sm text-white/70">{PAYMENT_LABELS[method]}</span>
-                <span className="font-medium text-white">{formatARS(totals?.[method] ?? 0)}</span>
+                <span className="font-medium text-white">{formatARS((totals as Record<string, number>)?.[method] ?? 0)}</span>
               </div>
             ))}
           </div>
