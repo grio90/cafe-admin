@@ -14,7 +14,7 @@ const createSchema = z.object({
 export async function list(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { from, to, cashRegisterId } = req.query as Record<string, string>
-    const where: Record<string, unknown> = {}
+    const where: Record<string, unknown> = { tenantId: req.tenantId! }
     if (from || to) {
       where.createdAt = {}
       if (from) (where.createdAt as Record<string, Date>).gte = new Date(from)
@@ -36,9 +36,9 @@ export async function list(req: AuthRequest, res: Response, next: NextFunction) 
 export async function create(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const data = createSchema.parse(req.body)
-    const register = await getTodayOpenRegister()
+    const register = await getTodayOpenRegister(req.tenantId as string)
     res.status(201).json(await prisma.expense.create({
-      data: { ...data, userId: req.userId!, cashRegisterId: register.id },
+      data: { ...data, userId: req.userId!, cashRegisterId: register.id, tenantId: req.tenantId! },
       include: { user: { select: { name: true } } },
     }))
   } catch (e) { next(e) }

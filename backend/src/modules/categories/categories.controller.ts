@@ -9,16 +9,16 @@ const schema = z.object({
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Color hex inválido').optional(),
 })
 
-export async function list(_req: AuthRequest, res: Response, next: NextFunction) {
+export async function list(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    res.json(await prisma.category.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }))
+    res.json(await prisma.category.findMany({ where: { isActive: true, tenantId: req.tenantId! }, orderBy: { name: 'asc' } }))
   } catch (e) { next(e) }
 }
 
 export async function create(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const data = schema.parse(req.body)
-    res.status(201).json(await prisma.category.create({ data }))
+    res.status(201).json(await prisma.category.create({ data: { ...data, tenantId: req.tenantId! } }))
   } catch (e) { next(e) }
 }
 

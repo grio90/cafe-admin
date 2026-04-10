@@ -18,7 +18,7 @@ export async function list(req: AuthRequest, res: Response, next: NextFunction) 
   try {
     const activeOnly = req.query.active !== 'false'
     res.json(await prisma.product.findMany({
-      where: { isActive: activeOnly ? true : undefined },
+      where: { tenantId: req.tenantId!, isActive: activeOnly ? true : undefined },
       include,
       orderBy: [{ category: { name: 'asc' } }, { name: 'asc' }],
     }))
@@ -28,7 +28,7 @@ export async function list(req: AuthRequest, res: Response, next: NextFunction) 
 export async function create(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const data = schema.parse(req.body)
-    res.status(201).json(await prisma.product.create({ data, include }))
+    res.status(201).json(await prisma.product.create({ data: { ...data, tenantId: req.tenantId! }, include }))
   } catch (e) { next(e) }
 }
 

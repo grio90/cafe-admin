@@ -18,7 +18,7 @@ export async function getMonthlyReport() {
   const months: Record<string, {
     year: number; month: number; monthLabel: string
     totalSales: number; totalExpenses: number
-    CASH: number; CREDIT_CARD: number; DEBIT_CARD: number; TRANSFER: number
+    CASH: number; CREDIT_CARD: number; DEBIT_CARD: number; TRANSFER: number; MERCADO_PAGO: number
     transactionCount: number
   }> = {}
 
@@ -30,7 +30,7 @@ export async function getMonthlyReport() {
       month: d.getMonth() + 1,
       monthLabel: d.toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }),
       totalSales: 0, totalExpenses: 0,
-      CASH: 0, CREDIT_CARD: 0, DEBIT_CARD: 0, TRANSFER: 0,
+      CASH: 0, CREDIT_CARD: 0, DEBIT_CARD: 0, TRANSFER: 0, MERCADO_PAGO: 0,
       transactionCount: 0,
     }
   }
@@ -65,7 +65,7 @@ export async function getPaymentMethodBreakdown(from?: string, to?: string) {
   }
 
   const sales = await prisma.sale.findMany({ where, select: { total: true, paymentMethod: true } })
-  const result = { CASH: 0, CREDIT_CARD: 0, DEBIT_CARD: 0, TRANSFER: 0, total: 0 }
+  const result = { CASH: 0, CREDIT_CARD: 0, DEBIT_CARD: 0, TRANSFER: 0, MERCADO_PAGO: 0, total: 0 }
   for (const s of sales) {
     const amount = parseFloat(s.total.toString())
     result[s.paymentMethod] += amount

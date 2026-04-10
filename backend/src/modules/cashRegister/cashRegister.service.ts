@@ -2,14 +2,14 @@ import { RegisterStatus } from '@prisma/client'
 import prisma from '../../shared/prisma'
 import { AppError, NotFoundError } from '../../shared/errors'
 
-export async function getTodayRegister() {
+export async function getTodayRegister(tenantId: string) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  return prisma.cashRegister.findUnique({ where: { date: today } })
+  return prisma.cashRegister.findFirst({ where: { date: today, tenantId } })
 }
 
-export async function getTodayOpenRegister() {
-  const reg = await getTodayRegister()
+export async function getTodayOpenRegister(tenantId: string) {
+  const reg = await getTodayRegister(tenantId)
   if (!reg || reg.status !== RegisterStatus.OPEN) {
     throw new AppError('No hay una caja abierta para hoy. Abrí la caja primero.', 400)
   }
@@ -24,7 +24,7 @@ export async function computeLiveTotals(registerId: string) {
   ])
 
   const totals = {
-    CASH: 0, CREDIT_CARD: 0, DEBIT_CARD: 0, TRANSFER: 0,
+    CASH: 0, CREDIT_CARD: 0, DEBIT_CARD: 0, TRANSFER: 0, MERCADO_PAGO: 0,
     totalSales: 0, totalExpenses: 0, netCash: 0, transactionCount: sales.length,
   }
 
@@ -43,15 +43,15 @@ export async function computeLiveTotals(registerId: string) {
   return totals
 }
 
-export async function openRegister(userId: string, openingCashAmount: number) {
+export async function openRegister(userId: string, openingCashAmount: number, tenantId: string) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  const existing = await prisma.cashRegister.findUnique({ where: { date: today } })
+  const existing = await prisma.cashRegister.findFirst({ where: { date: today, tenantId } })
   if (existing) throw new AppError('Ya existe una caja para hoy', 409)
 
   return prisma.cashRegister.create({
-    data: { date: today, openingCashAmount, userId },
+    data: { date: today, openingCashAmount, userId, tenantId },
   })
 }
 
@@ -90,8 +90,8 @@ export async function closeRegister(id: string, userId: string, closingNotes?: s
   })
 }
 
-export async function listRegisters(from?: string, to?: string) {
-  const where: Record<string, unknown> = {}
+export async function listRegisters(tenantId: string, from?: string, to?: string) {
+  const where: Record<string, unknown> = { tenantId }
   if (from || to) {
     where.date = {}
     if (from) (where.date as Record<string, Date>).gte = new Date(from)

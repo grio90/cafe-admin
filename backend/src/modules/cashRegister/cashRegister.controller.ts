@@ -6,13 +6,13 @@ import { z } from 'zod'
 export async function list(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { from, to } = req.query as Record<string, string>
-    res.json(await service.listRegisters(from, to))
+    res.json(await service.listRegisters(req.tenantId as string, from, to))
   } catch (e) { next(e) }
 }
 
-export async function today(_req: AuthRequest, res: Response, next: NextFunction) {
+export async function today(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const reg = await service.getTodayRegister()
+    const reg = await service.getTodayRegister(req.tenantId as string)
     if (!reg) return res.json(null)
     res.json(await service.getRegisterWithLiveTotals(reg.id))
   } catch (e) { next(e) }
@@ -21,7 +21,7 @@ export async function today(_req: AuthRequest, res: Response, next: NextFunction
 export async function open(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { openingCashAmount } = z.object({ openingCashAmount: z.number().min(0) }).parse(req.body)
-    res.status(201).json(await service.openRegister(req.userId!, openingCashAmount))
+    res.status(201).json(await service.openRegister(req.userId!, openingCashAmount, req.tenantId as string))
   } catch (e) { next(e) }
 }
 

@@ -16,14 +16,14 @@ const createSchema = z.object({
 export async function list(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { from, to, paymentMethod, cashRegisterId } = req.query as Record<string, string>
-    res.json(await service.listSales({ from, to, paymentMethod, cashRegisterId }))
+    res.json(await service.listSales({ from, to, paymentMethod, cashRegisterId, tenantId: req.tenantId! }))
   } catch (e) { next(e) }
 }
 
 export async function create(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const data = createSchema.parse(req.body)
-    res.status(201).json(await service.createSale(req.userId!, data.paymentMethod, data.items, data.notes))
+    res.status(201).json(await service.createSale(req.userId!, data.paymentMethod, data.items, req.tenantId as string, data.notes))
   } catch (e) { next(e) }
 }
 

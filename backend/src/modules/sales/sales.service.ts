@@ -12,12 +12,13 @@ export async function createSale(
   userId: string,
   paymentMethod: PaymentMethod,
   items: SaleItem[],
+  tenantId: string,
   notes?: string
 ) {
-  const register = await getTodayOpenRegister()
+  const register = await getTodayOpenRegister(tenantId)
 
   const products = await prisma.product.findMany({
-    where: { id: { in: items.map((i) => i.productId) }, isActive: true },
+    where: { id: { in: items.map((i) => i.productId) }, isActive: true, tenantId },
   })
 
   if (products.length !== items.length) {
@@ -45,6 +46,7 @@ export async function createSale(
       paymentMethod,
       notes,
       userId,
+      tenantId,
       cashRegisterId: register.id,
       items: { create: saleItems },
     },
@@ -55,8 +57,9 @@ export async function createSale(
   })
 }
 
-export async function listSales(filters: { from?: string; to?: string; paymentMethod?: string; cashRegisterId?: string }) {
+export async function listSales(filters: { from?: string; to?: string; paymentMethod?: string; cashRegisterId?: string; tenantId?: string }) {
   const where: Record<string, unknown> = {}
+  if (filters.tenantId) where.tenantId = filters.tenantId
   if (filters.from || filters.to) {
     where.createdAt = {}
     if (filters.from) (where.createdAt as Record<string, Date>).gte = new Date(filters.from)
