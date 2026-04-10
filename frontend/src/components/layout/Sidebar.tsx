@@ -1,13 +1,15 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, ShoppingCart, TrendingDown, Archive,
-  BarChart3, Users, CoffeeIcon, History, BookOpen
+  BarChart3, Users, CoffeeIcon, History, BookOpen,
+  QrCode, ClipboardList, ChefHat
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import clsx from 'clsx'
 
 const cashierNav = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/orders', icon: ClipboardList, label: 'Pedidos QR' },
   { to: '/sales', icon: ShoppingCart, label: 'Nueva Venta' },
   { to: '/sales/history', icon: History, label: 'Historial Ventas' },
   { to: '/expenses', icon: TrendingDown, label: 'Egresos' },
@@ -16,6 +18,7 @@ const cashierNav = [
 ]
 
 const adminNav = [
+  { to: '/tables', icon: QrCode, label: 'Mesas / QR' },
   { to: '/products', icon: CoffeeIcon, label: 'Productos' },
   { to: '/reports', icon: BarChart3, label: 'Reportes' },
   { to: '/users', icon: Users, label: 'Usuarios' },
@@ -23,7 +26,7 @@ const adminNav = [
 
 export default function Sidebar() {
   const user = useAuthStore((s) => s.user)
-  const isAdmin = user?.role === 'ADMIN'
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'
 
   return (
     <aside className="w-56 flex flex-col bg-[#16162a] border-r border-white/10 h-full">
@@ -51,6 +54,18 @@ export default function Sidebar() {
           </>
         )}
       </nav>
+
+      {/* Kitchen link */}
+      <div className="px-2 py-3 border-t border-white/10">
+        <a
+          href="/kitchen"
+          target="_blank"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-amber-400/80 hover:text-amber-400 hover:bg-amber-400/10 transition-colors"
+        >
+          <ChefHat size={18} />
+          Ver pantalla cocina
+        </a>
+      </div>
     </aside>
   )
 }

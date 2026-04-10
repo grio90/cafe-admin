@@ -6,6 +6,7 @@ const EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h'
 export interface JwtPayload {
   userId: string
   role: string
+  tenantId?: string
 }
 
 export function signToken(payload: JwtPayload): string {

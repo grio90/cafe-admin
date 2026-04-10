@@ -7,9 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
 enum Role {
+  SUPER_ADMIN
   ADMIN
   CASHIER
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PRO
 }
 
 enum PaymentMethod {
@@ -17,12 +26,60 @@ enum PaymentMethod {
   CREDIT_CARD
   DEBIT_CARD
   TRANSFER
+  MERCADO_PAGO
 }
 
 enum RegisterStatus {
   OPEN
   CLOSED
 }
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PROCESSING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+// ─── Tenant ───────────────────────────────────────────────────────────────────
+
+model Tenant {
+  id           String  @id @default(cuid())
+  name         String
+  slug         String  @unique
+  logoUrl      String?
+  address      String?
+  phone        String?
+  primaryColor String  @default("#0a1628")
+  plan         Plan    @default(FREE)
+  isActive     Boolean @default(true)
+  mpAccessToken String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users         User[]
+  categories    Category[]
+  products      Product[]
+  tables        Table[]
+  orders        Order[]
+  sales         Sale[]
+  expenses      Expense[]
+  cashRegisters CashRegister[]
+
+  @@map("tenants")
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
 
 model User {
   id           String   @id @default(cuid())
@@ -34,6 +91,9 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id])
+
   sales         Sale[]
   expenses      Expense[]
   cashRegisters CashRegister[]
@@ -41,35 +101,109 @@ model User {
   @@map("users")
 }
 
+// ─── Category ─────────────────────────────────────────────────────────────────
+
 model Category {
   id        String   @id @default(cuid())
-  name      String   @unique
+  name      String
   color     String   @default("#6B7280")
   isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
   products Product[]
 
+  @@unique([tenantId, name])
   @@map("categories")
 }
+
+// ─── Product ──────────────────────────────────────────────────────────────────
 
 model Product {
   id          String   @id @default(cuid())
   name        String
   description String?
   price       Decimal  @db.Decimal(10, 2)
+  imageUrl    String?
   isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
 
-  saleItems SaleItem[]
+  saleItems  SaleItem[]
+  orderItems OrderItem[]
 
   @@map("products")
 }
+
+// ─── Table ────────────────────────────────────────────────────────────────────
+
+model Table {
+  id        String   @id @default(cuid())
+  number    String
+  qrToken   String   @unique @default(cuid())
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  orders Order[]
+
+  @@unique([tenantId, number])
+  @@map("tables")
+}
+
+// ─── Order ────────────────────────────────────────────────────────────────────
+
+model Order {
+  id    String      @id @default(cuid())
+  status OrderStatus @default(PENDING)
+  total  Decimal     @db.Decimal(10, 2)
+  notes  String?
+
+  paymentStatus  PaymentStatus @default(UNPAID)
+  mpPaymentId    String?
+  mpPreferenceId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  tableId  String
+  table    Table  @relation(fields: [tableId], references: [id])
+
+  items OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  subtotal  Decimal @db.Decimal(10, 2)
+  notes     String?
+
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+// ─── Sale ─────────────────────────────────────────────────────────────────────
 
 model Sale {
   id            String        @id @default(cuid())
@@ -78,11 +212,12 @@ model Sale {
   notes         String?
   createdAt     DateTime      @default(now())
 
+  tenantId       String
+  tenant         Tenant        @relation(fields: [tenantId], references: [id])
   cashRegisterId String?
   cashRegister   CashRegister? @relation(fields: [cashRegisterId], references: [id])
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
 
   items SaleItem[]
 
@@ -95,14 +230,15 @@ model SaleItem {
   unitPrice Decimal @db.Decimal(10, 2)
   subtotal  Decimal @db.Decimal(10, 2)
 
-  saleId String
-  sale   Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
-
+  saleId    String
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
   productId String
   product   Product @relation(fields: [productId], references: [id])
 
   @@map("sale_items")
 }
+
+// ─── Expense ──────────────────────────────────────────────────────────────────
 
 model Expense {
   id          String   @id @default(cuid())
@@ -111,14 +247,17 @@ model Expense {
   notes       String?
   createdAt   DateTime @default(now())
 
+  tenantId       String
+  tenant         Tenant        @relation(fields: [tenantId], references: [id])
   cashRegisterId String?
   cashRegister   CashRegister? @relation(fields: [cashRegisterId], references: [id])
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
 
   @@map("expenses")
 }
+
+// ─── CashRegister ─────────────────────────────────────────────────────────────
 
 model CashRegister {
   id     String         @id @default(cuid())
@@ -139,12 +278,14 @@ model CashRegister {
   totalExpenses        Decimal? @db.Decimal(10, 2)
   netCash              Decimal? @db.Decimal(10, 2)
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
 
   sales    Sale[]
   expenses Expense[]
 
-  @@unique([date])
+  @@unique([tenantId, date])
   @@map("cash_registers")
 }

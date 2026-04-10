@@ -5,6 +5,7 @@ import { UnauthorizedError, ForbiddenError } from '../shared/errors'
 export interface AuthRequest extends Request {
   userId?: string
   userRole?: string
+  tenantId?: string
 }
 
 export function authenticate(req: AuthRequest, _res: Response, next: NextFunction) {
@@ -16,6 +17,7 @@ export function authenticate(req: AuthRequest, _res: Response, next: NextFunctio
     const payload = verifyToken(header.slice(7))
     req.userId = payload.userId
     req.userRole = payload.role
+    req.tenantId = payload.tenantId
     next()
   } catch {
     next(new UnauthorizedError('Token inválido o expirado'))
@@ -23,8 +25,15 @@ export function authenticate(req: AuthRequest, _res: Response, next: NextFunctio
 }
 
 export function requireAdmin(req: AuthRequest, _res: Response, next: NextFunction) {
-  if (req.userRole !== 'ADMIN') {
+  if (req.userRole !== 'ADMIN' && req.userRole !== 'SUPER_ADMIN') {
     return next(new ForbiddenError('Solo administradores pueden realizar esta acción'))
+  }
+  next()
+}
+
+export function requireSuperAdmin(req: AuthRequest, _res: Response, next: NextFunction) {
+  if (req.userRole !== 'SUPER_ADMIN') {
+    return next(new ForbiddenError('Acceso restringido a super administradores'))
   }
   next()
 }
