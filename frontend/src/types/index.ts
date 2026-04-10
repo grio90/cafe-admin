@@ -1,5 +1,5 @@
-export type Role = 'ADMIN' | 'CASHIER'
-export type PaymentMethod = 'CASH' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'TRANSFER'
+export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER'
+export type PaymentMethod = 'CASH' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'TRANSFER' | 'MERCADO_PAGO'
 export type RegisterStatus = 'OPEN' | 'CLOSED'
 
 export interface User {
@@ -7,6 +7,7 @@ export interface User {
   name: string
   email: string
   role: Role
+  tenantId?: string | null
   isActive?: boolean
   createdAt?: string
 }
